@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { nanoid } from "nanoid";
 import CreateContact from '../CreateContact';
 import ContactList from "../ContactList";
@@ -17,32 +17,19 @@ const App = () => {
   // }, [contacts]);
 
 
-  // useEffect(() => {
-  //   const prevLocalData = localStorage.getItem('contacts');
-  //   if (prevLocalData && JSON.parse(prevLocalData).length) {
-  //     setContacts(JSON.parse(prevLocalData));
-  //   }
-  // }, []);
-
-  // useEffect(() => {
-  //   const prevLocalData = localStorage.getItem('contacts');
-  //   if (contacts !== prevLocalData) {
-  //     localStorage.setItem('contacts', JSON.stringify(contacts));
-  //   }
-  // }, [contacts]);
-
   useEffect(() => {
     const prevLocalData = localStorage.getItem('contacts');
-    if (prevLocalData && JSON.parse(prevLocalData).length) {
+    if (prevLocalData) {
       setContacts(JSON.parse(prevLocalData));
     }
+  }, []);
 
-    if (contacts !== prevLocalData) {
-      localStorage.setItem('contacts', JSON.stringify(contacts));
-    }
+  useEffect(() => {
+    localStorage.setItem('contacts', JSON.stringify(contacts));
   }, [contacts]);
 
-  const createContact = (newContact) => {
+
+  const createContact = useCallback((newContact) => {
     const isAlreadyExist = contacts.some(el => el.name.toLowerCase() === newContact.name.toLowerCase());
     if (isAlreadyExist) return alert(`${newContact.name} is already in contacts.`);
 
@@ -51,24 +38,35 @@ const App = () => {
       id: nanoid(),
     }
     setContacts((prev) => [newContactCreate, ...prev]);
-  }
-  // createContact = (contact) => {
-  //   const isAlreadyExist = this.state.contacts.some(
-  //     (el) => el.name.toLowerCase() === contact.name.toLowerCase()
-  //   );
-  //   if (isAlreadyExist) return alert(`${contact.name} is already in contacts.`);
-  //   const newContact = {
-  //     ...contact,
-  //     id: nanoid(),
-  //   }
-  //   this.setState((prev) => ({
-  //     contacts: [newContact, ...prev.contacts],
-  //   }));
-  // }  
+  }, [contacts]);
+
+  const handleSearchChange = useCallback((e) => {
+    setFilter(e.target.value);
+  }, []);
+
+  const searchContact = useCallback(() => {
+    return contacts.filter((contact) =>
+      contact.name.toLowerCase().includes(filter.toLowerCase())
+    );
+  }, [contacts, filter]);
+
+  const deleteContact = useCallback((id) => {
+    setContacts((prev) => (
+      prev.filter(el => el.id !== id)
+    ));
+  }, []);
+
+  // const filteredContacts = searchContact();
 
   return (
-    <div>App</div>
-  )
+    <AppContainer>
+      <Header>Phonebook</Header>
+      <CreateContact createContact={createContact} />
+      <Header>Contacts</Header>
+      <SearchContact handleSearchChange={handleSearchChange} />
+      <ContactList contacts={searchContact()} deleteContact={deleteContact} />
+    </AppContainer>
+  );
 }
 
 export default App
@@ -104,7 +102,7 @@ export default App
 //     this.setState((prev) => ({
 //       contacts: [newContact, ...prev.contacts],
 //     }));
-//   }  
+//   }
 
 //   handleSearchChange = (e) => {
 //     this.setState({ filter: e.target.value });
